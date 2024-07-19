@@ -1,0 +1,37 @@
+apiVersion: "acid.zalan.do/v1"
+kind: postgresql
+metadata:
+  name: acid-upgrade-test
+spec:
+  dockerImage: ghcr.io/zalando/spilo-16:3.2-p2
+  teamId: "acid"
+  volume:
+    size: 1Gi
+  numberOfInstances: 2
+  enableMasterLoadBalancer: true
+  allowedSourceRanges:  # load balancers' source ranges for both master and replica services
+  - 0.0.0.0/0
+  users:
+    zalando:  # database owner
+    - superuser
+    - createdb
+    foo_user: []  # role for application foo
+  databases:
+    foo: zalando  # dbname: owner
+  preparedDatabases:
+    bar: {}
+  postgresql:
+    version: "12"
+  patroni:
+    pg_hba:
+      - local     all             all                             trust
+      - hostssl   all             +zalandos    127.0.0.1/32       pam
+      - host      all             all          127.0.0.1/32       md5
+      - hostssl   all             +zalandos    ::1/128            pam
+      - host      all             all          ::1/128            md5
+      - local     replication     standby                         trust
+      - hostssl   replication     standby      all                md5
+      - hostnossl all             +zalandos    all                pam
+      - hostnossl all             all          all                md5
+      - hostssl   all             +zalandos    all                pam
+      - hostssl   all             all          all                md5
